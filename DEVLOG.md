@@ -21,3 +21,12 @@ Program Counter (PC): Un registro singolo per sapere quale istruzione stiamo ese
 Stack: Un array per salvare gli indirizzi di ritorno dalle funzioni (il Chip-8 ne supporta solitamente 16)
 Stack Pointer (SP): Un numero per sapere a che punto dello stack siamo
 Timers: Due timer (Delay e Sound) che scalano a 60Hz
+
+Dopo aver creato la struttura della CPU e averla popolata con caratteri e ROM (che inizia da 200), bisogna creare il ciclo.
+
+Il ciclo della CPU è un ciclo fetch-decode-execute. Esso non legge un byte alla volta, perché ogni Operation Code (OpCode) è lungo due byte.
+Quindi quello che farà sarà prendere il primo byte, prendere il successivo, e unirli, formando un OpCode.
+
+L'operazione di unione di questo due byte, volta a formare un OpCode, è la fase di fetch.
+
+Invece la fase di decode ed execute, vengono fatte insieme. Questo perché la fase di decode del chip8 è molto semplice e veloce.
