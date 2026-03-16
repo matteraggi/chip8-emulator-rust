@@ -46,7 +46,7 @@ pub struct Cpu {
     sound_timer: u8,
 
     keypad: [bool; 16],
-    
+
     // Schermo 64x32 pixel (monocromatico)
     display: [bool; 64 * 32],
 }
@@ -104,15 +104,15 @@ impl Cpu {
 
     // funzione provvisoria per aggiornare lo schermo (da implementare con una libreria grafica)
     pub fn print_display(&self) {
-        print!("\x1B[H"); 
+        print!("\x1B[H");
 
         for y in 0..32 {
             for x in 0..64 {
                 let idx = x + (y * 64);
                 if self.display[idx] {
-                    print!("█"); 
+                    print!("█");
                 } else {
-                    print!(" "); 
+                    print!(" ");
                 }
             }
             println!();
@@ -141,50 +141,53 @@ impl Cpu {
 
         let nn = (opcode & 0x00FF) as u8;
         let nnn = opcode & 0x0FFF;
-        
+
         // match
         match c {
             0x0 => match nn {
-                0xE0 => { 
+                0xE0 => {
                     self.display = [false; 64 * 32];
                     self.print_display(); // Aggiorna lo schermo dopo averlo pulito
-                 },
-                0xEE => { 
+                }
+                0xEE => {
                     // RET: Torna indietro usando lo Stack
                     self.sp -= 1;
                     self.pc = self.stack[self.sp as usize];
-                },
+                }
                 _ => { /* Altri casi 0nnn raramente usati */ }
             },
-            0x1 => { // jump
+            0x1 => {
+                // jump
                 self.pc = nnn;
-            },
+            }
             0x2 => {
                 self.stack[self.sp as usize] = self.pc;
                 self.sp += 1;
                 self.pc = nnn;
-            },
+            }
             0x3 => {
-                if(self.v[x] == nn){
+                if (self.v[x] == nn) {
                     self.pc += 2;
                 }
-            },
+            }
             0x4 => {
-                if(self.v[x] != nn){
+                if (self.v[x] != nn) {
                     self.pc += 2;
                 }
-            },
+            }
             0x5 => {
-                if(self.v[x] == self.v[y]){
+                if (self.v[x] == self.v[y]) {
                     self.pc += 2;
                 }
-            },
-            0x6 => { // set a register vx
+            }
+            0x6 => {
+                // set a register vx
                 self.v[x] = nn;
-            },
-            0x7 => { // add value to a register vx
+            }
+            0x7 => {
+                // add value to a register vx
                 self.v[x] = self.v[x].wrapping_add(nn);
-            },
+            }
             0x8 => match n {
                 0x0 => self.v[x] = self.v[y],
                 0x1 => self.v[x] |= self.v[y],
@@ -194,7 +197,7 @@ impl Cpu {
                     let (res, overflow) = self.v[x].overflowing_add(self.v[y]);
                     self.v[x] = res;
                     self.v[0xF] = if overflow { 1 } else { 0 };
-                },
+                }
                 0x5 => {
                     if (self.v[x] > self.v[y]) {
                         self.v[0xF] = 1; // No borrow
@@ -202,7 +205,7 @@ impl Cpu {
                         self.v[0xF] = 0; // Borrow
                     }
                     self.v[x] = self.v[x].wrapping_sub(self.v[y]);
-                },
+                }
                 0x6 => {
                     if (self.v[x] & 0x1) == 1 {
                         self.v[0xF] = 1; // Least significant bit is 1
@@ -210,7 +213,7 @@ impl Cpu {
                         self.v[0xF] = 0; // Least significant bit is 0
                     }
                     self.v[x] >>= 1; // Divide Vx by 2 (shift right)
-                },
+                }
                 0x7 => {
                     if (self.v[y] > self.v[x]) {
                         self.v[0xF] = 1; // No borrow
@@ -218,7 +221,7 @@ impl Cpu {
                         self.v[0xF] = 0; // Borrow
                     }
                     self.v[x] = self.v[y].wrapping_sub(self.v[x]);
-                },
+                }
                 0xE => {
                     if (self.v[x] & 0x80) == 0x80 {
                         self.v[0xF] = 1; // Most significant bit is 1
@@ -226,53 +229,108 @@ impl Cpu {
                         self.v[0xF] = 0; // Most significant bit is 0
                     }
                     self.v[x] <<= 1; // Multiply Vx by 2 (shift left)
-                },
+                }
                 _ => println!("Opcode 8 sconosciuto: {:X}", n),
             },
             0x9 => {
                 if (self.v[x] != self.v[y]) {
                     self.pc += 2;
                 }
-            },
+            }
             0xA => {
                 self.i = nnn;
-            },
+            }
             0xB => {
                 self.pc = nnn + self.v[0] as u16;
-            },
+            }
             0xC => {
                 let random_byte: u8 = rand::random();
                 self.v[x] = random_byte & nn;
-            },
+            }
             0xD => {
                 let x_coord = self.v[x] as usize % 64;
                 let y_coord = self.v[y] as usize % 32;
                 let height = n as usize;
-                
+
                 self.v[0xF] = 0; // Reset collision flag
 
                 for row in 0..height {
                     let sprite_byte = self.memory[(self.i + row as u16) as usize];
-                    
+
                     for col in 0..8 {
                         // Controlla se il bit specifico (dal più significativo al meno) è 1
                         if (sprite_byte & (0x80 >> col)) != 0 {
                             let px = (x_coord + col) % 64;
                             let py = (y_coord + row) % 32;
-                            
+
                             // Indice nell'array monodimensionale del display
                             let idx = px + (py * 64);
-                            
+
                             if self.display[idx] {
                                 self.v[0xF] = 1; // Collisione rilevata
                             }
-                            
+
                             self.display[idx] ^= true; // Disegna con XOR
                         }
                     }
                 }
                 self.print_display(); // Aggiorna lo schermo dopo aver disegnato
             }
+            0xE => match nn {
+                0x9E => {
+                    // SKP Vx: Salta l'istruzione successiva se il tasto corrispondente a Vx è premuto
+                    let key = self.v[x] as usize;
+                    if self.keypad[key] {
+                        self.pc += 2;
+                    }
+                }
+                0xA1 => {
+                    // SKNP Vx: Salta l'istruzione successiva se il tasto corrispondente a Vx NON è premuto
+                    let key = self.v[x] as usize;
+                    if !self.keypad[key] {
+                        self.pc += 2;
+                    }
+                }
+                _ => println!("Opcode E sconosciuto: {:X}", nn),
+            },
+            0xF => match nn {
+                0x7 => self.v[x] = self.delay_timer,
+                0x0A => {
+                    let mut pressed = false;
+                    for i in 0..16 {
+                        if self.keypad[i] {
+                            self.v[x] = i as u8;
+                            pressed = true;
+                            break;
+                        }
+                    }
+
+                    if !pressed {
+                        self.pc -= 2; // "Riprova" al prossimo ciclo finché non premi nulla
+                    }
+                }
+                0x15 => self.delay_timer = self.v[x],
+                0x18 => self.sound_timer = self.v[x],
+                0x1E => self.i = self.i.wrapping_add(self.v[x] as u16),
+                0x29 => self.i = (self.v[x] as u16) * 5, // Ogni carattere occupa 5 byte nel fontset
+                0x33 => {
+                    let value = self.v[x];
+                    self.memory[self.i as usize] = value / 100;
+                    self.memory[self.i as usize + 1] = (value % 100) / 10;
+                    self.memory[self.i as usize + 2] = value % 10;
+                }
+                0x55 => {
+                    for idx in 0..=x {
+                        self.memory[(self.i + idx as u16) as usize] = self.v[idx];
+                    }
+                }
+                0x65 => {
+                    for idx in 0..=x {
+                        self.v[idx] = self.memory[(self.i + idx as u16) as usize];
+                    }
+                }
+                _ => println!("Opcode F sconosciuto: {:X}", nn),
+            },
 
             _ => println!("Opcode non gestito: {:#X}", opcode),
         }
