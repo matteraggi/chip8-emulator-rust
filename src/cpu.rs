@@ -45,7 +45,7 @@ pub struct Cpu {
     // Sound Timer (8-bit, decrements at 60Hz)
     sound_timer: u8,
 
-    keypad: [bool; 16],
+    pub keypad: [bool; 16],
 
     // Schermo 64x32 pixel (monocromatico)
     pub display: [bool; 64 * 32],
@@ -102,23 +102,6 @@ impl Cpu {
         }
     }
 
-    // funzione provvisoria per aggiornare lo schermo (da implementare con una libreria grafica)
-    pub fn print_display(&self) {
-        print!("\x1B[H");
-
-        for y in 0..32 {
-            for x in 0..64 {
-                let idx = x + (y * 64);
-                if self.display[idx] {
-                    print!("█");
-                } else {
-                    print!(" ");
-                }
-            }
-            println!();
-        }
-    }
-
     pub fn fetch(&mut self) -> u16 {
         // 1. leggi byte1 da memory[pc]
         let byte1 = self.memory[self.pc as usize] as u16;
@@ -147,7 +130,6 @@ impl Cpu {
             0x0 => match nn {
                 0xE0 => {
                     self.display = [false; 64 * 32];
-                    self.print_display(); // Aggiorna lo schermo dopo averlo pulito
                 }
                 0xEE => {
                     // RET: Torna indietro usando lo Stack
@@ -274,7 +256,6 @@ impl Cpu {
                         }
                     }
                 }
-                self.print_display(); // Aggiorna lo schermo dopo aver disegnato
             }
             0xE => match nn {
                 0x9E => {
