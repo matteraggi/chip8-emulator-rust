@@ -48,7 +48,7 @@ pub struct Cpu {
     keypad: [bool; 16],
 
     // Schermo 64x32 pixel (monocromatico)
-    display: [bool; 64 * 32],
+    pub display: [bool; 64 * 32],
 }
 
 impl Cpu {
@@ -166,17 +166,17 @@ impl Cpu {
                 self.pc = nnn;
             }
             0x3 => {
-                if (self.v[x] == nn) {
+                if self.v[x] == nn {
                     self.pc += 2;
                 }
             }
             0x4 => {
-                if (self.v[x] != nn) {
+                if self.v[x] != nn {
                     self.pc += 2;
                 }
             }
             0x5 => {
-                if (self.v[x] == self.v[y]) {
+                if self.v[x] == self.v[y] {
                     self.pc += 2;
                 }
             }
@@ -199,7 +199,7 @@ impl Cpu {
                     self.v[0xF] = if overflow { 1 } else { 0 };
                 }
                 0x5 => {
-                    if (self.v[x] > self.v[y]) {
+                    if self.v[x] >= self.v[y] {
                         self.v[0xF] = 1; // No borrow
                     } else {
                         self.v[0xF] = 0; // Borrow
@@ -215,7 +215,7 @@ impl Cpu {
                     self.v[x] >>= 1; // Divide Vx by 2 (shift right)
                 }
                 0x7 => {
-                    if (self.v[y] > self.v[x]) {
+                    if self.v[y] >= self.v[x] {
                         self.v[0xF] = 1; // No borrow
                     } else {
                         self.v[0xF] = 0; // Borrow
@@ -233,7 +233,7 @@ impl Cpu {
                 _ => println!("Opcode 8 sconosciuto: {:X}", n),
             },
             0x9 => {
-                if (self.v[x] != self.v[y]) {
+                if self.v[x] != self.v[y] {
                     self.pc += 2;
                 }
             }
